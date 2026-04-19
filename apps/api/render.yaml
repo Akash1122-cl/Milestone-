@@ -2,12 +2,12 @@ services:
   # FastAPI Backend Service
   - type: web
     name: mutual-fund-api
-    runtime: python
+    runtime: docker
     plan: free
     repo: https://github.com/Akash1122-cl/Milestone-
     rootDir: apps/api
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    dockerContext: apps/api
+    dockerfilePath: apps/api/Dockerfile
     healthCheckPath: /health
     envVars:
       - key: CHROMA_API_KEY
