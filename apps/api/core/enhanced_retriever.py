@@ -29,36 +29,46 @@ EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 if not CHROMA_API_KEY or CHROMA_API_KEY == "your-chroma-cloud-api-key":
     raise ValueError("?? CHROMA_API_KEY environment variable is required and must be valid for Cloud synchronization.")
 
-try:
-    chroma_client = chromadb.CloudClient(
-        tenant=CHROMA_TENANT,
-        database=CHROMA_DATABASE,
-        api_key=CHROMA_API_KEY
-    )
-    bge_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name=EMBED_MODEL,
-        normalize_embeddings=True,
-    )
-except Exception as e:
-    raise RuntimeError(f"Failed to initialize ChromaDB or Embedder: {e}")
-
 class EnhancedRetriever:
     """Enhanced retriever that combines Chroma Cloud with structured metrics"""
     
     def __init__(self):
+        self.chroma_client_initialized = False
+        self.bge_ef = None
+        self.collections = {}
+
+    def _ensure_initialized(self):
+        if self.chroma_client_initialized:
+            return
+            
         try:
+            if not CHROMA_API_KEY or CHROMA_API_KEY == "your-chroma-cloud-api-key":
+                raise ValueError("❌ CHROMA_API_KEY environment variable is required and must be valid for Cloud synchronization.")
+
+            self.chroma_client = chromadb.CloudClient(
+                tenant=CHROMA_TENANT,
+                database=CHROMA_DATABASE,
+                api_key=CHROMA_API_KEY
+            )
+            self.bge_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
+                model_name=EMBED_MODEL,
+                normalize_embeddings=True,
+            )
             self.collections = {
-                'nippon_india': chroma_client.get_or_create_collection('nippon_india'),
-                'general': chroma_client.get_or_create_collection('general')
+                'nippon_india': self.chroma_client.get_or_create_collection('nippon_india'),
+                'general': self.chroma_client.get_or_create_collection('general')
             }
+            self.chroma_client_initialized = True
         except Exception as e:
-            print(f"Warning: Could not initialize collections. Error: {e}")
+            print(f"Warning: Could not initialize Chroma/collections. Error: {e}")
             self.collections = {}
+            self.chroma_client_initialized = False
     
     def retrieve_enhanced_context(self, query: str, scheme_name: Optional[str] = None, top_k: int = 3) -> Tuple[str, Optional[str], Optional[str]]:
         """
         Enhanced retrieval that combines Chroma Cloud results with structured metrics
         """
+        self._ensure_initialized()
         # First, try to get structured metrics data
         metrics_context = self._get_metrics_context(query, scheme_name)
         
@@ -155,7 +165,7 @@ class EnhancedRetriever:
         for collection in collections_to_search:
             try:
                 # Generate query embedding
-                query_embedding = bge_ef([query])
+                query_embedding = self.bge_ef([query])
                 
                 # Query collection
                 results = collection.query(
