@@ -27,7 +27,7 @@ EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 
 # Initialize ChromaDB client once
 if not CHROMA_API_KEY or CHROMA_API_KEY == "your-chroma-cloud-api-key":
-    sys.exit("?? CHROMA_API_KEY environment variable is required and must be valid for Cloud synchronization.")
+    raise ValueError("?? CHROMA_API_KEY environment variable is required and must be valid for Cloud synchronization.")
 
 try:
     chroma_client = chromadb.CloudClient(
@@ -40,8 +40,7 @@ try:
         normalize_embeddings=True,
     )
 except Exception as e:
-    print(f"Failed to initialize ChromaDB or Embedder: {e}")
-    sys.exit(1)
+    raise RuntimeError(f"Failed to initialize ChromaDB or Embedder: {e}")
 
 class EnhancedRetriever:
     """Enhanced retriever that combines Chroma Cloud with structured metrics"""
