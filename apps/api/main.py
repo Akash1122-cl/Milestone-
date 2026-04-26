@@ -19,12 +19,22 @@ except Exception as e:
 app = FastAPI(title="Mutual Fund FAQ API", description="Facts-only RAG backend")
 
 # Allow Next.js frontend to communicate
+# NOTE: allow_credentials=True is INCOMPATIBLE with allow_origins=["*"] — browsers reject it.
+# Use an explicit origins list instead.
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://web-gamma-weld-29.vercel.app",   # Production Vercel URL
+    "https://milestone-1-o899.onrender.com",   # Backend self-reference
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"], 
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",  # Allow all Vercel preview deployments
+    allow_credentials=False,   # Must be False when using wildcard-like origins
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 class QueryRequest(BaseModel):

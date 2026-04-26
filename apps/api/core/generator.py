@@ -5,14 +5,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Securely initialize the Gemini client. 
-# Requires GEMINI_API_KEY in .env
+# Securely initialize the Gemini client.
+# Requires GEMINI_API_KEY in environment (Render env vars or .env locally).
+# IMPORTANT: Must pass api_key explicitly — env-level discovery fails on Render.
 api_key = os.getenv("GEMINI_API_KEY")
 if api_key:
-    client = genai.Client()
+    client = genai.Client(api_key=api_key)
 else:
     client = None
-    print("Warning: GEMINI_API_KEY not found in environment.")
+    print("Warning: GEMINI_API_KEY not found in environment. Answers will fail.")
 
 SYSTEM_PROMPT = """
 Role: You are an objective Mutual Fund FAQ Assistant.

@@ -157,9 +157,29 @@ export default function ChatInterface() {
     setLoading(true);
 
     try {
-      const data = await sendMessage(text, null, threadId);
+      const data = await sendMessage(
+        text,
+        null,
+        threadId,
+        // onWakingUp: called when Render free-tier cold-start is detected
+        () => {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "bot",
+              content: "⏳ The server is waking up from sleep (Render free tier). Please wait up to 60 seconds — your answer is on the way...",
+              citation: null,
+              last_updated: null,
+              is_advisory: false,
+              isStatus: true,
+            },
+          ]);
+        }
+      );
+
+      // Remove any "waking up" status messages and add the real answer
       setMessages((prev) => [
-        ...prev,
+        ...prev.filter((m) => !m.isStatus),
         {
           role: "bot",
           content: data.answer,
@@ -170,10 +190,10 @@ export default function ChatInterface() {
       ]);
     } catch (err) {
       setMessages((prev) => [
-        ...prev,
+        ...prev.filter((m) => !m.isStatus),
         {
           role: "bot",
-          content: "?? Sorry, I could not reach the server. Please ensure the backend is running.",
+          content: `❌ Could not reach the server after multiple attempts. Error: ${err.message}`,
           citation: null,
           last_updated: null,
           is_advisory: false,
@@ -183,6 +203,7 @@ export default function ChatInterface() {
       setLoading(false);
     }
   };
+
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
